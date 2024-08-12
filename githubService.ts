@@ -17,6 +17,7 @@ interface CommitInfo {
     author: string;
     message: string;
     date: string;
+    commit_url: string;
 }
 
 async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
@@ -67,6 +68,7 @@ async function fetchCommits(owner: string, repo: string, page: number = 1, perPa
             author: commit.commit.author.name,
             message: commit.commit.message,
             date: commit.commit.author.date,
+            commit_url: commit.commit.author.commit_url,
         }));
 
         return commits;

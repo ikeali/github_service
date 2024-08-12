@@ -40,18 +40,25 @@ var axios_1 = require("axios");
 var db_1 = require("./db");
 var repositoryService_1 = require("./repositoryService");
 var commitService_1 = require("./commitService");
-// Function to fetch repository information from GitHub
 function fetchRepositoryInfo(owner, repo) {
     return __awaiter(this, void 0, void 0, function () {
-        var url, response, data, error_1;
+        var url, apiToken, headers, response, data, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     url = "https://api.github.com/repos/".concat(owner, "/").concat(repo);
+                    apiToken = process.env.API_TOKEN;
+                    if (!apiToken) {
+                        throw new Error('API_TOKEN is not defined');
+                    }
+                    headers = {
+                        'Authorization': "Bearer ".concat(apiToken),
+                        'Content-Type': 'application/json',
+                    };
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, axios_1.default.get(url)];
+                    return [4 /*yield*/, axios_1.default.get(url, { headers: headers })];
                 case 2:
                     response = _a.sent();
                     data = response.data;
@@ -72,7 +79,6 @@ function fetchRepositoryInfo(owner, repo) {
         });
     });
 }
-// Function to fetch commit information from GitHub within a specific date range
 function fetchCommits(owner_1, repo_1) {
     return __awaiter(this, arguments, void 0, function (owner, repo, page, perPage, startDate, endDate) {
         var url, response, commits, error_2;
@@ -110,7 +116,6 @@ function fetchCommits(owner_1, repo_1) {
         });
     });
 }
-// Function to check for updates within a specific date range
 function checkForUpdates(startDate, endDate) {
     return __awaiter(this, void 0, void 0, function () {
         var client, batchSize, owner, repo, pageSize, page, commits, repoInfo, result, repositoryId, error_3;
@@ -131,10 +136,8 @@ function checkForUpdates(startDate, endDate) {
                 case 3:
                     repoInfo = _a.sent();
                     console.log('Repository Info:', repoInfo);
-                    // Save repository info
                     return [4 /*yield*/, (0, repositoryService_1.saveRepositoryInfo)(client, repoInfo)];
                 case 4:
-                    // Save repository info
                     _a.sent();
                     return [4 /*yield*/, client.query("SELECT id FROM repository WHERE owner = $1 AND name = $2", [owner, repo])];
                 case 5:
@@ -168,13 +171,11 @@ function checkForUpdates(startDate, endDate) {
         });
     });
 }
-// Function to calculate the date one year ago
 function getOneYearAgoDate() {
     var date = new Date();
     date.setFullYear(date.getFullYear() - 1);
     return date.toISOString();
 }
-// Continuous Monitoring with date range (last year)
 var monitorInterval = 60000; // 60 seconds
 setInterval(function () { return __awaiter(void 0, void 0, void 0, function () {
     var startDate, endDate;
@@ -190,5 +191,4 @@ setInterval(function () { return __awaiter(void 0, void 0, void 0, function () {
         }
     });
 }); }, monitorInterval);
-// Initial check with a date range (last year) when the application starts
 checkForUpdates(getOneYearAgoDate(), new Date().toISOString());

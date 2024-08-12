@@ -18,7 +18,7 @@ export async function initializeDB() {
     const client = await pool.connect();
     try {
         console.log('Creating tables if not exist...');
-        
+
         await client.query(`
             CREATE TABLE IF NOT EXISTS repository (
                 id SERIAL PRIMARY KEY,
@@ -41,6 +41,7 @@ export async function initializeDB() {
             author VARCHAR(255),
             message TEXT,
             date TIMESTAMP,
+            commit_url TEXT NOT NULL,
             repository_id INT,
             FOREIGN KEY (repository_id) REFERENCES repository(id)
 

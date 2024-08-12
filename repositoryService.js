@@ -1,5 +1,4 @@
 "use strict";
-// import { Pool } from 'pg';
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -40,16 +39,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveRepositoryInfo = saveRepositoryInfo;
 function saveRepositoryInfo(client, repoInfo) {
     return __awaiter(this, void 0, void 0, function () {
-        var owner, name, description, stars, forks, url;
+        var query, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    owner = repoInfo.owner, name = repoInfo.name, description = repoInfo.description, stars = repoInfo.stars, forks = repoInfo.forks, url = repoInfo.url;
-                    return [4 /*yield*/, client.query("\n        INSERT INTO repository (owner, name, description, stars, forks, url)\n        VALUES ($1, $2, $3, $4, $5, $6)\n        ON CONFLICT (owner, name) DO UPDATE  -- This should match the unique constraint\n        SET description = EXCLUDED.description,\n            stars = EXCLUDED.stars,\n            forks = EXCLUDED.forks,\n            url = EXCLUDED.url\n        RETURNING id;\n    ", [owner, name, description, stars, forks, url])];
+                    query = "\n        INSERT INTO repository (owner, name, description, stars, forks, url)\n        VALUES ($1, $2, $3, $4, $5, $6)\n        ON CONFLICT (owner, name) DO UPDATE\n        SET description = EXCLUDED.description,\n            stars = EXCLUDED.stars,\n            forks = EXCLUDED.forks,\n            url = EXCLUDED.url;\n    ";
+                    _a.label = 1;
                 case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, client.query(query, [
+                            repoInfo.owner,
+                            repoInfo.name,
+                            repoInfo.description,
+                            repoInfo.stars,
+                            repoInfo.forks,
+                            repoInfo.url
+                        ])];
+                case 2:
                     _a.sent();
-                    console.log('Repository information saved successfully.');
-                    return [2 /*return*/];
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_1 = _a.sent();
+                    console.error('Error saving repository info:', error_1);
+                    throw error_1;
+                case 4: return [2 /*return*/];
             }
         });
     });

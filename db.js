@@ -62,10 +62,8 @@ function initializeDB() {
                 case 2:
                     _a.trys.push([2, 5, 6, 7]);
                     console.log('Creating tables if not exist...');
-                    // Create tables if they don't exist
                     return [4 /*yield*/, client.query("\n            CREATE TABLE IF NOT EXISTS repository (\n                id SERIAL PRIMARY KEY,\n                owner VARCHAR(255),\n                name VARCHAR(255),\n                description TEXT,\n                stars INTEGER,\n                forks INTEGER,\n                url TEXT,\n                CONSTRAINT unique_owner_name UNIQUE(owner, name) -- Explicit unique constraint\n\n            );\n        ")];
                 case 3:
-                    // Create tables if they don't exist
                     _a.sent();
                     console.log('Repository table created.');
                     return [4 /*yield*/, client.query("\n            CREATE TABLE commit (\n            id SERIAL PRIMARY KEY,\n            sha VARCHAR(255) UNIQUE,\n            author VARCHAR(255),\n            message TEXT,\n            date TIMESTAMP,\n            repository_id INT,\n            FOREIGN KEY (repository_id) REFERENCES repository(id)\n\n            );\n        ")];
