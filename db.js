@@ -66,7 +66,7 @@ function initializeDB() {
                 case 3:
                     _a.sent();
                     console.log('Repository table created.');
-                    return [4 /*yield*/, client.query("\n            CREATE TABLE commit (\n            id SERIAL PRIMARY KEY,\n            sha VARCHAR(255) UNIQUE,\n            author VARCHAR(255),\n            message TEXT,\n            date TIMESTAMP,\n            repository_id INT,\n            FOREIGN KEY (repository_id) REFERENCES repository(id)\n\n            );\n        ")];
+                    return [4 /*yield*/, client.query("\n            CREATE TABLE commit (\n            id SERIAL PRIMARY KEY,\n            sha VARCHAR(255) UNIQUE,\n            author VARCHAR(255),\n            message TEXT,\n            date TIMESTAMP,\n            commit_url TEXT NOT NULL,\n            repository_id INT,\n            FOREIGN KEY (repository_id) REFERENCES repository(id)\n\n            );\n        ")];
                 case 4:
                     _a.sent();
                     console.log('Commit table created.');

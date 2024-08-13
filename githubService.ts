@@ -1,7 +1,8 @@
 import axios from 'axios';
 import pool from './db';
 import { saveRepositoryInfo } from './repositoryService';
-import { saveCommitsInBatches } from './commitService';
+// import { saveCommitsInBatches } from './commitService';
+import { saveCommits } from './commitService';
 
 interface RepositoryInfo {
     owner: string;
@@ -20,8 +21,83 @@ interface CommitInfo {
     commit_url: string;
 }
 
-async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
-    const url = `https://api.github.com/repos/${owner}/${repo}`;
+// export async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
+
+//     const url = `https://api.github.com/repos/${owner}/${repo}`;
+
+//     const apiToken = process.env.API_TOKEN;
+
+//     if (!apiToken) {
+//         throw new Error('API_TOKEN is not defined');
+//     }
+
+//     const headers = {
+//         'Authorization': `Bearer ${apiToken}`,
+//         'Content-Type': 'application/json',
+//     };
+
+//     try {
+//         const response = await axios.get(url, { headers });
+//         const data = response.data;
+//         return {
+//             owner: data.owner.login,
+//             name: data.name,
+//             description: data.description,
+//             stars: data.stargazers_count,
+//             forks: data.forks_count,
+//             url: data.html_url,
+//         };
+//     } catch (error) {
+//         if (axios.isAxiosError(error)) {
+//             console.error('Error fetching repository info:', error.response?.data);
+//         } else {
+//             console.error('Unexpected error:', error);
+//         }
+//         throw error;
+//     }
+// }
+
+
+export async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
+    const apiToken = process.env.API_TOKEN;
+    if (!apiToken) {
+        throw new Error('API_TOKEN is not defined');
+    }
+
+    try {
+        const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}`, {
+            headers: { Authorization: `token ${apiToken}` }
+        });
+        const data = response.data;
+        return {
+            owner: data.owner.login,
+            name: data.name,
+            description: data.description,
+            stars: data.stargazers_count,
+            forks: data.forks_count,
+            url: data.html_url,
+        };
+    } catch (error:any) {
+        if ( error.response.status === 404) {
+            console.error(`Repository not found: ${error.response.data}`);
+        } else {
+            console.error('Unexpected error:', error);
+        }
+        throw new Error('Failed to fetch repository information');
+    }
+}
+        
+
+
+async function fetchCommits(owner: string, repo: string, page: number = 1, perPage: number = 30, startDate?: string, endDate?: string): Promise<CommitInfo[]> {
+    let url = `https://api.github.com/repos/${owner}/${repo}/commits?page=${page}&per_page=${perPage}`;
+
+    if (startDate) {
+        url += `&since=${startDate}`;
+    }
+    if (endDate) {
+        url += `&until=${endDate}`;
+    }
 
     const apiToken = process.env.API_TOKEN;
 
@@ -36,51 +112,28 @@ async function fetchRepositoryInfo(owner: string, repo: string): Promise<Reposit
 
     try {
         const response = await axios.get(url, { headers });
-        const data = response.data;
-        return {
-            owner: data.owner.login,
-            name: data.name,
-            description: data.description,
-            stars: data.stargazers_count,
-            forks: data.forks_count,
-            url: data.html_url,
-        };
-    } catch (error) {
-        console.error(`Failed to fetch repository info: ${(error as Error).message}`);
-        throw error;
-    }
-}
-
-async function fetchCommits(owner: string, repo: string, page: number = 1, perPage: number = 30, startDate?: string, endDate?: string): Promise<CommitInfo[]> {
-    let url = `https://api.github.com/repos/${owner}/${repo}/commits?page=${page}&per_page=${perPage}`;
-
-    if (startDate) {
-        url += `&since=${startDate}`;
-    }
-    if (endDate) {
-        url += `&until=${endDate}`;
-    }
-
-    try {
-        const response = await axios.get(url);
         const commits = response.data.map((commit: any) => ({
             sha: commit.sha,
             author: commit.commit.author.name,
             message: commit.commit.message,
             date: commit.commit.author.date,
-            commit_url: commit.commit.author.commit_url,
+            commit_url: commit.html_url,
         }));
 
         return commits;
     } catch (error) {
-        console.error(`Failed to fetch commits: ${(error as Error).message}`);
+        if (axios.isAxiosError(error)) {
+            console.error(`Failed to fetch commits:`, error.response?.data);
+        } else {
+            console.error(`Unexpected error:`, error);
+        }
         throw error;
     }
 }
 
 async function checkForUpdates(startDate?: string, endDate?: string) {
     const client = await pool.connect();
-    const batchSize = 10;
+    const batchSize = 100;
     const owner = 'chromium';
     const repo = 'chromium';
     const pageSize = 30;
@@ -99,7 +152,14 @@ async function checkForUpdates(startDate?: string, endDate?: string) {
         do {
             commits = await fetchCommits(owner, repo, page, pageSize, startDate, endDate);
             if (commits.length > 0) {
-                await saveCommitsInBatches(client, commits, repositoryId, batchSize);
+                // await saveCommitsInBatches(client, commits, repositoryId, batchSize);
+
+                // const startFrom = new Date('2024-08-10T00:00:00Z'); // Example start time
+                const startFrom = new Date('2024-08-12T10:00:00Z');
+
+                await saveCommits(client, commits, repositoryId, startFrom, batchSize);
+
+                // await saveCommits(client, commits, repositoryId, batchSize);
                 page++;
             }
         } while (commits.length > 0);
@@ -112,19 +172,34 @@ async function checkForUpdates(startDate?: string, endDate?: string) {
     }
 }
 
-function getOneYearAgoDate(): string {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() - 1);
-    return date.toISOString();
-}
+// function getOneYearAgoDate(): string {
+//     const date = new Date();
+//     date.setFullYear(date.getFullYear() - 1);
+//     return date.toISOString();
+// }
 
 const monitorInterval = 60000; // 60 seconds
 
+// setInterval(async () => {
+//     const startDate = getOneYearAgoDate();
+//     const endDate = new Date().toISOString();
+
+//     await checkForUpdates(startDate, endDate);
+// }, monitorInterval);
+
+function getOneHourAgoDate(): string {
+    const date = new Date();
+    date.setHours(date.getHours() - 1);
+    return date.toISOString();
+}
+
 setInterval(async () => {
-    const startDate = getOneYearAgoDate();
+    const startDate = getOneHourAgoDate();
     const endDate = new Date().toISOString();
 
     await checkForUpdates(startDate, endDate);
 }, monitorInterval);
 
-checkForUpdates(getOneYearAgoDate(), new Date().toISOString());
+
+// checkForUpdates(getOneYearAgoDate(), new Date().toISOString());
+checkForUpdates(getOneHourAgoDate(), new Date().toISOString());

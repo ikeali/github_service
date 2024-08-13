@@ -36,29 +36,58 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.fetchRepositoryInfo = fetchRepositoryInfo;
 var axios_1 = require("axios");
 var db_1 = require("./db");
 var repositoryService_1 = require("./repositoryService");
+// import { saveCommitsInBatches } from './commitService';
 var commitService_1 = require("./commitService");
+// export async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
+//     const url = `https://api.github.com/repos/${owner}/${repo}`;
+//     const apiToken = process.env.API_TOKEN;
+//     if (!apiToken) {
+//         throw new Error('API_TOKEN is not defined');
+//     }
+//     const headers = {
+//         'Authorization': `Bearer ${apiToken}`,
+//         'Content-Type': 'application/json',
+//     };
+//     try {
+//         const response = await axios.get(url, { headers });
+//         const data = response.data;
+//         return {
+//             owner: data.owner.login,
+//             name: data.name,
+//             description: data.description,
+//             stars: data.stargazers_count,
+//             forks: data.forks_count,
+//             url: data.html_url,
+//         };
+//     } catch (error) {
+//         if (axios.isAxiosError(error)) {
+//             console.error('Error fetching repository info:', error.response?.data);
+//         } else {
+//             console.error('Unexpected error:', error);
+//         }
+//         throw error;
+//     }
+// }
 function fetchRepositoryInfo(owner, repo) {
     return __awaiter(this, void 0, void 0, function () {
-        var url, apiToken, headers, response, data, error_1;
+        var apiToken, response, data, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    url = "https://api.github.com/repos/".concat(owner, "/").concat(repo);
                     apiToken = process.env.API_TOKEN;
                     if (!apiToken) {
                         throw new Error('API_TOKEN is not defined');
                     }
-                    headers = {
-                        'Authorization': "Bearer ".concat(apiToken),
-                        'Content-Type': 'application/json',
-                    };
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, axios_1.default.get(url, { headers: headers })];
+                    return [4 /*yield*/, axios_1.default.get("https://api.github.com/repos/".concat(owner, "/").concat(repo), {
+                            headers: { Authorization: "token ".concat(apiToken) }
+                        })];
                 case 2:
                     response = _a.sent();
                     data = response.data;
@@ -72,8 +101,13 @@ function fetchRepositoryInfo(owner, repo) {
                         }];
                 case 3:
                     error_1 = _a.sent();
-                    console.error("Failed to fetch repository info: ".concat(error_1.message));
-                    throw error_1;
+                    if (error_1.response.status === 404) {
+                        console.error("Repository not found: ".concat(error_1.response.data));
+                    }
+                    else {
+                        console.error('Unexpected error:', error_1);
+                    }
+                    throw new Error('Failed to fetch repository information');
                 case 4: return [2 /*return*/];
             }
         });
@@ -81,11 +115,12 @@ function fetchRepositoryInfo(owner, repo) {
 }
 function fetchCommits(owner_1, repo_1) {
     return __awaiter(this, arguments, void 0, function (owner, repo, page, perPage, startDate, endDate) {
-        var url, response, commits, error_2;
+        var url, apiToken, headers, response, commits, error_2;
+        var _a;
         if (page === void 0) { page = 1; }
         if (perPage === void 0) { perPage = 30; }
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     url = "https://api.github.com/repos/".concat(owner, "/").concat(repo, "/commits?page=").concat(page, "&per_page=").concat(perPage);
                     if (startDate) {
@@ -94,22 +129,36 @@ function fetchCommits(owner_1, repo_1) {
                     if (endDate) {
                         url += "&until=".concat(endDate);
                     }
-                    _a.label = 1;
+                    apiToken = process.env.API_TOKEN;
+                    if (!apiToken) {
+                        throw new Error('API_TOKEN is not defined');
+                    }
+                    headers = {
+                        'Authorization': "Bearer ".concat(apiToken),
+                        'Content-Type': 'application/json',
+                    };
+                    _b.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, axios_1.default.get(url)];
+                    _b.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, axios_1.default.get(url, { headers: headers })];
                 case 2:
-                    response = _a.sent();
+                    response = _b.sent();
                     commits = response.data.map(function (commit) { return ({
                         sha: commit.sha,
                         author: commit.commit.author.name,
                         message: commit.commit.message,
                         date: commit.commit.author.date,
+                        commit_url: commit.html_url,
                     }); });
                     return [2 /*return*/, commits];
                 case 3:
-                    error_2 = _a.sent();
-                    console.error("Failed to fetch commits: ".concat(error_2.message));
+                    error_2 = _b.sent();
+                    if (axios_1.default.isAxiosError(error_2)) {
+                        console.error("Failed to fetch commits:", (_a = error_2.response) === null || _a === void 0 ? void 0 : _a.data);
+                    }
+                    else {
+                        console.error("Unexpected error:", error_2);
+                    }
                     throw error_2;
                 case 4: return [2 /*return*/];
             }
@@ -118,13 +167,13 @@ function fetchCommits(owner_1, repo_1) {
 }
 function checkForUpdates(startDate, endDate) {
     return __awaiter(this, void 0, void 0, function () {
-        var client, batchSize, owner, repo, pageSize, page, commits, repoInfo, result, repositoryId, error_3;
+        var client, batchSize, owner, repo, pageSize, page, commits, repoInfo, result, repositoryId, startFrom, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, db_1.default.connect()];
                 case 1:
                     client = _a.sent();
-                    batchSize = 10;
+                    batchSize = 100;
                     owner = 'chromium';
                     repo = 'chromium';
                     pageSize = 30;
@@ -148,9 +197,11 @@ function checkForUpdates(startDate, endDate) {
                 case 7:
                     commits = _a.sent();
                     if (!(commits.length > 0)) return [3 /*break*/, 9];
-                    return [4 /*yield*/, (0, commitService_1.saveCommitsInBatches)(client, commits, repositoryId, batchSize)];
+                    startFrom = new Date('2024-08-12T10:00:00Z');
+                    return [4 /*yield*/, (0, commitService_1.saveCommits)(client, commits, repositoryId, startFrom, batchSize)];
                 case 8:
                     _a.sent();
+                    // await saveCommits(client, commits, repositoryId, batchSize);
                     page++;
                     _a.label = 9;
                 case 9:
@@ -171,18 +222,28 @@ function checkForUpdates(startDate, endDate) {
         });
     });
 }
-function getOneYearAgoDate() {
+// function getOneYearAgoDate(): string {
+//     const date = new Date();
+//     date.setFullYear(date.getFullYear() - 1);
+//     return date.toISOString();
+// }
+var monitorInterval = 60000; // 60 seconds
+// setInterval(async () => {
+//     const startDate = getOneYearAgoDate();
+//     const endDate = new Date().toISOString();
+//     await checkForUpdates(startDate, endDate);
+// }, monitorInterval);
+function getOneHourAgoDate() {
     var date = new Date();
-    date.setFullYear(date.getFullYear() - 1);
+    date.setHours(date.getHours() - 1);
     return date.toISOString();
 }
-var monitorInterval = 60000; // 60 seconds
 setInterval(function () { return __awaiter(void 0, void 0, void 0, function () {
     var startDate, endDate;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                startDate = getOneYearAgoDate();
+                startDate = getOneHourAgoDate();
                 endDate = new Date().toISOString();
                 return [4 /*yield*/, checkForUpdates(startDate, endDate)];
             case 1:
@@ -191,4 +252,5 @@ setInterval(function () { return __awaiter(void 0, void 0, void 0, function () {
         }
     });
 }); }, monitorInterval);
-checkForUpdates(getOneYearAgoDate(), new Date().toISOString());
+// checkForUpdates(getOneYearAgoDate(), new Date().toISOString());
+checkForUpdates(getOneHourAgoDate(), new Date().toISOString());
