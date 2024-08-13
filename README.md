@@ -1,103 +1,31 @@
-Objective
-Build a service in TypeScript that fetches data from GitHub's public APIs to retrieve repository information and commits, saves the data in a persistent store, and continuously monitors the repository for changes. The service will ensure data consistency, avoid duplicate commits, and allow for configurable start dates and data resets.
+**Objective**
+The goal of this project is to build a TypeScript service that interacts with GitHub's public APIs to retrieve detailed repository information and commit histories. This data will be stored in a PostgreSQL database and the service will continuously monitor repositories for updates. The system ensures data integrity by avoiding duplicate entries, supports configurable start dates for data collection, and allows for data resets as needed.
 
-Requirements
+**Requirements**
 Fetching GitHub API Data
-Commits:
+**Commits:**
 
-Retrieve commit message, author, date, and URL for each commit.
-Save the fetched data into a persistent storage (PostgreSQL).
-Implement a mechanism to continuously monitor the repository for changes and fetch new data at short intervals (e.g., every hour).
-Avoid pulling the same commit twice.
-Ensure commits in the database mirror commits on GitHub.
-Configurable date to start pulling commits since.
-Make it possible to reset the collection to start from a point in time.
-Auxiliary Table - Repository Table:
+Retrieve essential commit details, including the message, author, date, and URL.
+Persist the fetched commit data into a PostgreSQL database.
+Implement continuous monitoring to detect and fetch new commits at regular intervals (e.g., hourly).
+Ensure that each commit is fetched only once, preventing duplication.
+Maintain consistency between the commits stored in the database and those on GitHub.
+Allow configuration of the starting date from which commits should be fetched.
+Provide the ability to reset the data collection, allowing a restart from a specific point in time.
 
-Store metadata about the repository.
-Repository information includes:
-Repository name
+**Repository Information:**
+Retrieve and store the following repository details:
+Name
 Description
 URL
-Language
+Primary language
 Forks count
 Stars count
 Open issues count
 Watchers count
-Created and updated dates
-Data Storage
-Design and create necessary tables to store repository details and commit data.
-Ensure efficient querying of data.
-Setup
-Clone the repository:
-
-bash
-Copy code
-git clone <repository_url>
-cd <repository_directory>
-Install dependencies:
-
-bash
-Copy code
-npm install
-Configure environment variables:
-
-Create a .env file in the root directory and add your GitHub API token:
-
-makefile
-Copy code
-API_TOKEN=your_github_token
-Database setup:
-
-Configure your database settings in the config file or environment variables.
-
-Usage
-Run the service:
-
-bash
-Copy code
-npm start
-This will start the service, which will begin fetching data from GitHub and saving it to the database.
-
-Reset the collection:
-
-To reset the collection and start fetching from a specific point in time, use the provided endpoint or command line tool (if implemented).
-
-Documentation
-Data Retrieval Actions
-Get the top N commit authors by commit counts:
-
-Query the database to retrieve the top N authors based on the number of commits.
-
-Example SQL query:
-
-sql
-Copy code
-SELECT author, COUNT(*) as commit_count
-FROM commits
-GROUP BY author
-ORDER BY commit_count DESC
-LIMIT N;
-Retrieve commits of a repository by repository name:
-
-Query the database to retrieve all commits for a given repository.
-
-Example SQL query:
-
-sql
-Copy code
-SELECT * 
-FROM commits 
-WHERE repository_name = 'repository_name';
-Development
-Testing:
-
-Ensure that you write tests for the data fetching and monitoring functionalities.
-
-Contributing:
-
-Contributions are welcome. Please follow the standard Git workflow and submit a pull request.
-
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
+Creation date
+Last updated date
+**Data Storage**
+Design and implement database tables to efficiently store repository and commit information.
+Optimize for efficient querying, particularly to retrieve the top N authors based on commit counts.
+Ensure the database schema supports all necessary relationships and indexing for fast data retrieval.
