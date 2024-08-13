@@ -1,4 +1,5 @@
-**Objective**
+  **Objective**
+
 The goal of this project is to build a TypeScript service that interacts with GitHub's public APIs to retrieve detailed repository information and commit histories. This data will be stored in a PostgreSQL database and the service will continuously monitor repositories for updates. The system ensures data integrity by avoiding duplicate entries, supports configurable start dates for data collection, and allows for data resets as needed.
 
 **Requirements**
