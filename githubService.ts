@@ -1,7 +1,6 @@
 import axios from 'axios';
 import pool from './db';
 import { saveRepositoryInfo } from './repositoryService';
-// import { saveCommitsInBatches } from './commitService';
 import { saveCommits } from './commitService';
 
 interface RepositoryInfo {
@@ -20,42 +19,6 @@ interface CommitInfo {
     date: string;
     commit_url: string;
 }
-
-// export async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
-
-//     const url = `https://api.github.com/repos/${owner}/${repo}`;
-
-//     const apiToken = process.env.API_TOKEN;
-
-//     if (!apiToken) {
-//         throw new Error('API_TOKEN is not defined');
-//     }
-
-//     const headers = {
-//         'Authorization': `Bearer ${apiToken}`,
-//         'Content-Type': 'application/json',
-//     };
-
-//     try {
-//         const response = await axios.get(url, { headers });
-//         const data = response.data;
-//         return {
-//             owner: data.owner.login,
-//             name: data.name,
-//             description: data.description,
-//             stars: data.stargazers_count,
-//             forks: data.forks_count,
-//             url: data.html_url,
-//         };
-//     } catch (error) {
-//         if (axios.isAxiosError(error)) {
-//             console.error('Error fetching repository info:', error.response?.data);
-//         } else {
-//             console.error('Unexpected error:', error);
-//         }
-//         throw error;
-//     }
-// }
 
 
 export async function fetchRepositoryInfo(owner: string, repo: string): Promise<RepositoryInfo> {
@@ -152,14 +115,11 @@ async function checkForUpdates(startDate?: string, endDate?: string) {
         do {
             commits = await fetchCommits(owner, repo, page, pageSize, startDate, endDate);
             if (commits.length > 0) {
-                // await saveCommitsInBatches(client, commits, repositoryId, batchSize);
 
-                // const startFrom = new Date('2024-08-10T00:00:00Z'); // Example start time
                 const startFrom = new Date('2024-08-12T10:00:00Z');
 
                 await saveCommits(client, commits, repositoryId, startFrom, batchSize);
 
-                // await saveCommits(client, commits, repositoryId, batchSize);
                 page++;
             }
         } while (commits.length > 0);
@@ -172,20 +132,10 @@ async function checkForUpdates(startDate?: string, endDate?: string) {
     }
 }
 
-// function getOneYearAgoDate(): string {
-//     const date = new Date();
-//     date.setFullYear(date.getFullYear() - 1);
-//     return date.toISOString();
-// }
 
 const monitorInterval = 60000; // 60 seconds
 
-// setInterval(async () => {
-//     const startDate = getOneYearAgoDate();
-//     const endDate = new Date().toISOString();
 
-//     await checkForUpdates(startDate, endDate);
-// }, monitorInterval);
 
 function getOneHourAgoDate(): string {
     const date = new Date();
@@ -201,5 +151,4 @@ setInterval(async () => {
 }, monitorInterval);
 
 
-// checkForUpdates(getOneYearAgoDate(), new Date().toISOString());
 checkForUpdates(getOneHourAgoDate(), new Date().toISOString());
