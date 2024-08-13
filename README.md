@@ -32,6 +32,7 @@ Creation date
 Last updated date
 
 **Data Storage**
+
 Design and implement database tables to efficiently store repository and commit information.
 Optimize for efficient querying, particularly to retrieve the top N authors based on commit counts.
 Ensure the database schema supports all necessary relationships and indexing for fast data retrieval.
